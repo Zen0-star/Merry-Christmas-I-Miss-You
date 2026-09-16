@@ -13,10 +13,12 @@ for (let i = 0; i < snowCount; i++) {
   document.body.appendChild(f);
 }
 
-// ---- timed lyrics ----
+// ---- elements ----
 const title = document.getElementById('title');
 const lines = document.querySelectorAll('.lyric');
 const replayBtn = document.getElementById('replay');
+const song = document.getElementById('song');
+const startOverlay = document.getElementById('startOverlay');
 let timers = [];
 
 function schedule(el, showAt, hideAt) {
@@ -27,16 +29,19 @@ function schedule(el, showAt, hideAt) {
   }, hideAt * 1000));
 }
 
-function play() {
+function resetLyrics() {
   timers.forEach(clearTimeout);
   timers = [];
-
-  title.classList.add('show');
-  title.classList.remove('hide');
+  title.classList.remove('show', 'hide');
   lines.forEach(l => l.classList.remove('show', 'hide'));
   replayBtn.classList.remove('visible');
+}
 
-  // hide title after 3 seconds
+function play() {
+  resetLyrics();
+
+  // title shows for the first 3 seconds of the song
+  title.classList.add('show');
   timers.push(setTimeout(() => {
     title.classList.remove('show');
     title.classList.add('hide');
@@ -45,9 +50,28 @@ function play() {
   // schedule each lyric from its data-start / data-end
   lines.forEach(l => schedule(l, +l.dataset.start, +l.dataset.end));
 
-  // show replay button at the end
-  timers.push(setTimeout(() => replayBtn.classList.add('visible'), 40500));
+  // show replay button at the end (last lyric ends at 50s)
+  timers.push(setTimeout(() => replayBtn.classList.add('visible'), 50500));
 }
 
-replayBtn.addEventListener('click', play);
-play();
+// ---- start playback when audio actually begins ----
+song.addEventListener('play', () => {
+  startOverlay.classList.add('hidden');
+  play();
+});
+
+// if autoplay is blocked, tapping the overlay starts everything
+startOverlay.addEventListener('click', () => {
+  song.play();
+});
+
+// replay button restarts song + lyrics together
+replayBtn.addEventListener('click', () => {
+  song.currentTime = 0;
+  song.play();
+});
+
+// if the song ends on its own, show the replay button
+song.addEventListener('ended', () => {
+  replayBtn.classList.add('visible');
+});
